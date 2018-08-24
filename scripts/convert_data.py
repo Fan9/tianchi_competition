@@ -72,6 +72,7 @@ def _process_per_image(image_dir, xml_dir, lab):
     return (image_raw, lab, shape, object_name, truncated, difficult, bboxes)
 
 
+'''
 def _convert_to_example(image_raw, lab, shape, object_name, truncated,
                         difficult, bboxes):
     bboxes = list(map(list, zip(*bboxes)))
@@ -92,12 +93,23 @@ def _convert_to_example(image_raw, lab, shape, object_name, truncated,
         'object/bbox/ymax': float_feature(next(iter_bboxes, []))
     }))
     return example
+'''
+def _convert_to_example(image_raw, lab):
+
+    image_format = b'jpg'
+    example = tf.train.Example(features=tf.train.Features(feature={
+        'image/encoded': bytes_feature(image_raw),
+        'image/format': bytes_feature(image_format),
+        'label': int64_feature(lab)
+    }))
+    return example
 
 
 def main(args=None):
     cls_info = []
     file_dir = []
     data_split = ['train.tfrecord', 'test.tfrecord']
+    #data_split = ['test.tfrecord']
 
     for root, sub, files in os.walk(FLAGS.root_dir):
         cls_info.extend(sub)
@@ -106,9 +118,9 @@ def main(args=None):
     #print(cls_info)
 
     #write class info to class.txt
-    with open(FLAGS.cls_dir, 'a') as f:
-        for idx, cls in enumerate(cls_info):
-            f.write(str(idx) + ':' + cls + '\n')
+    #with open(FLAGS.cls_dir, 'a') as f:
+        #for idx, cls in enumerate(cls_info):
+         #   f.write(str(idx) + ':' + cls + '\n')
 
     image_dir = []
     for i in file_dir:
@@ -120,7 +132,7 @@ def main(args=None):
     np.random.seed(123)
     np.random.shuffle(image_dir)
 
-    num_train_image = int(0.7 * len(image_dir))
+    num_train_image = int(0.8 * len(image_dir))
 
     train_image_dir = image_dir[0:num_train_image]
     var_image_dir = image_dir[num_train_image:]
@@ -144,21 +156,26 @@ def main(args=None):
                 #lab = cls_info.index(cur_cls)
                 if cur_cls == '正常':
                     lab = 0
-                    num_negivate +=1
+
                     image_raw = tf.gfile.FastGFile(cur_image_dir, 'rb').read()
-                    l_data = (image_raw, lab, [1920, 2560, 3], ['none'.encode('utf-8')], \
-                          [-1], [-1], [(0.0, 0.0, 1.0, 1.0)])
-                    example = _convert_to_example(*l_data)
+                    #l_data = (image_raw, lab, [1920, 2560, 3], ['none'.encode('utf-8')], \
+                          #[-1], [-1], [(0.0, 0.0, 1.0, 1.0)])
+                    example = _convert_to_example(image_raw,lab)
+
+                    num_positive += 1
                     writer.write(example.SerializeToString())
+
                 else:
 
                     lab = 1
-                    num_positive +=1
-                    xml_dir = cur_image_dir[0:-4] + '.xml'
+                    #xml_dir = cur_image_dir[0:-4] + '.xml'
+                    image_raw = tf.gfile.FastGFile(cur_image_dir, 'rb').read()
+                    #l_data = _process_per_image(cur_image_dir, xml_dir, lab)
+                    example = _convert_to_example(image_raw,lab)
 
-                    l_data = _process_per_image(cur_image_dir, xml_dir, lab)
-                    example = _convert_to_example(*l_data)
-                    writer.write(example.SerializeToString())
+                    for i1 in range(2):
+                        num_negivate += 1
+                        writer.write(example.SerializeToString())
 
             sys.stdout.write('\n       positive num:%d'%num_positive)
             sys.stdout.write('\n       negivate num:%d'%num_negivate)

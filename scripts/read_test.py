@@ -1,6 +1,7 @@
 #coding=utf-8
 import tensorflow as tf
 from matplotlib import pyplot as plt
+import cv2
 
 file_dir = '/home/fangsh/tianchi/tianchi_dataset/tfrecord/train.tfrecord'
 
@@ -11,27 +12,18 @@ feature = tf.parse_single_example(serialized=serialized,
                                   features={
                                       'image/encoded':tf.FixedLenFeature([],tf.string),
                                       'image/format':tf.FixedLenFeature([],tf.string),
-                                      'image/shape': tf.FixedLenFeature([3],tf.int64),
                                       'label': tf.FixedLenFeature([],tf.int64),
-                                      'object/name': tf.VarLenFeature(tf.string),
-                                      'object/truncated':tf.VarLenFeature(tf.int64),
-                                      'object/difficult':tf.VarLenFeature(tf.int64),
-                                      'object/bbox/xmin':tf.VarLenFeature(tf.float32),
-                                      'object/bbox/ymin':tf.VarLenFeature(tf.float32),
-                                      'object/bbox/xmax':tf.VarLenFeature(tf.float32),
-                                      'object/bbox/ymax':tf.VarLenFeature(tf.float32)
                                         })
-shape,label = feature['image/shape'], feature['label']
+label =  feature['label']
 image_raw = feature['image/encoded']
-object_name = feature['object/name']
 
 #change 42 classes to 2 classes
 #label = 0 if label==33 else 1
 
 image = tf.image.decode_jpeg(image_raw)
 label1 = tf.cast(label,tf.int32)
-float_image = tf.cast(image,tf.uint8)
-float_image =tf.reshape(float_image,[1920,2560,3])
+#float_image = tf.cast(image,tf.uint8)
+#float_image =tf.reshape(float_image,[384,512,3])
 
 
 #float_image1 = tf.reshape(image,[1920,2560,3])
@@ -54,14 +46,17 @@ with tf.Session() as sess:
     for i in range(100):
         #_,img = sess.run([shape])
         #print(lab)
-        print(shape.eval()[0])
-        print(shape.eval()[1])
-        print(shape.eval()[2])
+        #print(shape.eval()[0])
+        #print(shape.eval()[1])
+        #print(shape.eval()[2])
         #for i in name.values:
             #print(i.decode('utf-8'))
-        #plt.imshow(img)
+        print(label1.eval())
+        #cv2.imshow('img',image.eval())
+        #cv2.waitKey()
+        plt.imshow(image.eval())
         #plt.imshow 格式要求  
         #3-dimensional arrays must be of dtype unsigned byte, unsigned short, float32 or float64
-        #plt.show()
+        plt.show()
     coord.request_stop()
     coord.join(threads)
